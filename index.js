@@ -3,6 +3,7 @@ const through = require('through2')
 const replaceExt = require('replace-ext')
 const PluginError = require('plugin-error')
 const parse5 = require("parse5")
+const sass = require('sass')
 
 module.exports = function(options){
 
@@ -73,7 +74,68 @@ module.exports = function(options){
 		      generatedFile: replaceExtension(file.relative)
 		    }, options.coffee.options)  
 
-		  	outScript = CoffeeScript.compile(scriptContents, coffeeCompileOptions)
+		  	try {
+		  		outScript = CoffeeScript.compile(scriptContents, coffeeCompileOptions)
+		  	} catch (err) { 
+		  		console.error(`Error on copile coffee file ${file.path}: ${err}`)
+		  		throw err		  		
+		  	}
+	  	}
+		}
+
+	  if(options.sass && options.sass.compile){
+
+	  	if(isLang(contents, "sass")){
+
+		  	try {
+
+		  		var sassContent = styleContents
+
+		  		if(options.sass.replacer)
+		  			sassContent = options.sass.replacer(sassContent)
+
+		  		var lines = sassContent.split("\n")
+		  		var newLines = []
+		  		var first = false
+		  		var removeStartSpace = false
+		  		var spacesToReplace = 0
+		  		for(var i in lines){
+		  			line = lines[i]
+
+		  			if(line.trim() != "" && !first){
+						first = true
+
+			  			if (line.startsWith(" ")){
+			  				for(var l = 0; l < line.length; l++){
+			  					if(line.charAt(l) == ' '){
+			  						spacesToReplace++;
+			  						continue
+			  					}
+			  					break
+			  				}			  				
+			  			}			  			
+		  			}
+
+		  			if(spacesToReplace > 0) {
+		  				newLines.push(line.substring(spacesToReplace))
+		  			} else {
+		  				newLines.push(line)
+		  			}
+
+		  		}
+
+		  		sassContent = newLines.join("\n")
+		  		
+		  		sassOpts = Object.assign({
+		  			url: new URL(`file://${file.path}`)
+		  		}, options.sass.options)
+
+		  		outStyle = sass.compileString(sassContent, sassOpts).css
+		  		styleLang = ""
+		  	} catch (err) {
+		  		console.error(`Error on copile coffee file ${file.path}: ${err}`)
+		  		throw err
+		  	}
 	  	}
 		}
 

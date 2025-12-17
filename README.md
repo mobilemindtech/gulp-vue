@@ -19,8 +19,8 @@ Gulp vue compiller
 	      compile: false
 	      options: {}
 	    }
-	    pug: {
-	      compile: false
+	    sass: {
+	      compile: true
 	      options: {}
 	    }    
 	  ).on('error', errorHandler)).pipe(gulp.dest(dest))
